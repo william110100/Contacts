@@ -28,13 +28,15 @@ jobs:
       - run: flutter pub get
       - run: flutter test
       - run: flutter build apk
+
+      - id: auth
+        name: Authenticate Google Cloud SDK
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIAL }}
       
-      # - name: Set up Google Cloud SDK
-      #   uses: google-github-actions/setup-gcloud@main
-      #   with:
-      #     project_id: ${{ secrets.GCP_PROJECT_ID }}
-      #     service_account_key: ${{ secrets.GCP_FTL_KEY }}
-      #     export_default_credentials: true
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
       
       - name: Upload to Firebase Test Lab
         run: |
@@ -43,12 +45,12 @@ jobs:
           ./gradlew app:assembleDebug -Ptarget=`pwd`../../integration_test/main_test.dart
           popd
 
-          echo "${{ secrets.GCP_FTL_KEY }}" | base64 --decode > ./gcloud_key_file.json
-          gcloud auth activate-service-account --key-file=./gcloud_key_file.json
-          gcloud --quiet config set project "${{ secrets.GCP_PROJECT_ID }}"
-          # gcloud auth login --cred-file=./gcloud_key_file.json
+          echo '${{ secrets.GCP_FTL_KEY }}' | base64 --decode > ./gcloud_key_file.json
+          # gcloud auth activate-service-account --key-file=./gcloud_key_file.json
+          gcloud auth login --cred-file=./gcloud_key_file.json
+          gcloud --quiet config set project '${{ secrets.GCP_PROJECT_ID }}'
           gcloud firebase test android run \
             --type instrumentation \
             --app build/app/outputs/apk/debug/app-debug.apk \
             --test build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
-            --timeout 10m
+            --timeout 2m
